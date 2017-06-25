@@ -1,0 +1,97 @@
+---
+title: "PA1_Template.Rmd"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reproducible Research week 2 project
+
+Below is the required output of reproducible research week 2 project
+
+# 1. set working directory and read csv file
+
+```{r}
+setwd("C:/Users/User/Desktop/Course/Data science specialization/Course 5 week 2")
+f<-read.csv("./activity.csv", header = TRUE)
+```
+
+#2. create a variable to store the table of date and Total_step_each_day
+
+```{r}
+library("dplyr")
+ans2<-group_by(f, date) %>% summarize(Total_step_each_day = sum(steps, na.rm = TRUE))
+print(ans2)
+```
+
+change the format of date from FACTOR to DATE, and plot histogram
+```{r}
+ans2$date<-as.Date(as.character(ans2$date))
+plot(x=ans2$date, y=ans2$Total_step_each_day, type="h", main = "Total step each day", xlab = "Date", ylab = "Total step")
+```
+
+#3.calculate mean and median of each day
+```{r}
+ans3<-group_by(f, date) %>% summarize(Mean_each_day = mean(steps, na.rm = TRUE), Median_each_day = median(steps, na.rm = TRUE))
+print(ans3)
+```
+
+#4.calcuate the average step of 5-mins interval and plot the graph
+```{r}
+ans4<-group_by(f,interval) %>% summarize(five_mins_avg = mean(steps, na.rm = TRUE))
+```
+
+Plot the graph
+```{r}
+plot(x = ans4$interval, y = ans4$five_mins_avg, main = "Average steps for 5 mins interval", xlab = "5 mins interval", ylab = "average steps", type = "l")
+```
+
+#5. Find the highest average of step of 5 mins interval
+```{r}
+ans5<-subset(ans4, five_mins_avg == max(five_mins_avg))
+print(ans5)
+```
+
+#6. Missing value is imputted by its average steps across days
+```{r}
+ans6<-merge(x = f, y = ans4, intersect(names(f), names(ans4)))
+ans6$steps[is.na(ans6$steps)]<-ans6$five_mins_avg[is.na(ans6$steps)]
+ans6<-arrange(ans6, date, interval)
+print(head(ans6,50))
+```
+
+#7. Plot histogram of the total number of steps taken each day after missing values are imputed
+```{r}
+ans7<-group_by(ans6, date) %>% summarize(Total_step_each_day = sum(steps, na.rm = TRUE))
+ans7$date<-as.Date(as.character(ans7$date))
+print(ans7)
+```
+
+Plot the graph
+```{r}
+plot(x=ans7$date, y=ans7$Total_step_each_day, type="h", main = "Total step each day after imputted missing value", xlab = "Date", ylab = "Total step")
+```
+
+#8. Create weekend and weekday for weektype (factor)
+```{r}
+weektype<-weekdays(as.Date(as.character(ans6$date))) %in% c("Saturday", "Sunday")
+weektype[weektype==TRUE]<-"Weekend"
+weektype[weektype==FALSE]<-"Weekdays"
+weektype<-as.factor(weektype)
+ans8<-cbind(ans6, weektype)
+```
+
+calculate the mean by weektype factor
+```{r}
+ans8<-group_by(ans8,interval, weektype) %>% summarize(five_mins_avg = mean(steps, na.rm = TRUE))
+ans8
+```
+
+load library lattice to plot histogram by factor weektype
+```{r}
+library("lattice")
+xyplot(five_mins_avg ~ interval | weektype, data = ans8, layout = c(1,2), type = "l", ylab = "Average steps of 5mins interval")
+
+```
